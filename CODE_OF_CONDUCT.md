@@ -1,2 +1,2 @@
 Code of Conduct
-This project has adopted the Amazon Open Source Code of Conduct. For more information see the Code of Conduct FAQ or contact opensource-codeofconduct@amazon.com with any additional questions or comments.
+This project has adopted the [Amazon Open Source Code of Conduct](https://aws.github.io/code-of-conduct). For more information see the [Code of Conduct FAQ](https://github.com/aws-samples/cloud-gateway-for-amazon-kinesis-video-streams/blob/main/CODE_OF_CONDUCT.md#:~:text=information%20see%20the-,Code%20of%20Conduct%20FAQ,-or%20contact%20opensource) or contact opensource-codeofconduct@amazon.com with any additional questions or comments.
