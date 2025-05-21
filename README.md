@@ -22,7 +22,7 @@ This project demonstrates an automated license plate detection system using AWS 
 ```bash
 aws cloudformation create-stack \
   --stack-name kvs-license-detection \
-  --template-body file://test.yaml \
+  --template-body file://aws-kvs-license-detection-demo-cfn.yaml \
   --capabilities CAPABILITY_IAM
 ```
 
