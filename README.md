@@ -61,12 +61,7 @@ Replace `<EC2-PUBLIC-IP>` with the public IP address from the CloudFormation out
 On the EC2 instance, use the pre-installed GStreamer with KVS plugin:
 
 ```bash
-export GST_PLUGIN_PATH=/home/ubuntu/amazon-kinesis-video-streams-producer-sdk-cpp/build
-export AWS_DEFAULT_REGION=$(curl -s http://169.254.169.254/latest/meta-data/placement/region)
-
-gst-launch-1.0 v4l2src device=/dev/video0 ! videoconvert ! video/x-raw,format=I420,width=1280,height=720 ! \
-  x264enc bframes=0 key-int-max=45 bitrate=500 ! \
-  h264parse ! kvssink stream-name=aws-kvs-license-detection-demo storage-size=512
+TODO
 ```
 
 ### 2. View Results
