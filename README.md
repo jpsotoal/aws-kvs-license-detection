@@ -11,6 +11,17 @@ This project demonstrates an automated license plate detection system using AWS 
 5. **DynamoDB**: Stores detected license plate information
 6. **SNS**: Sends email notification when system is ready to use
 
+## Architecture Diagram
+
+```mermaid
+graph LR
+    A[EC2 Instance] -->|Streams Video| B[Kinesis Video Stream]
+    B -->|Extracts Frames| C[S3 Bucket]
+    C -->|Triggers| D[Lambda Function]
+    D -->|Uses| E[Amazon Rekognition]
+    D -->|Stores Results| F[DynamoDB]
+    G[SNS] -->|Notifications| H[Email]
+    
 ## Prerequisites
 
 - AWS CLI installed and configured with appropriate permissions
@@ -35,12 +46,37 @@ aws cloudformation create-stack \
 2. Click the "Confirm subscription" link in the email
 3. You should see a confirmation message in your browser
 
+Here's the modified section with the added information about receiving the EC2 console login URL:
+
 ### 3. Wait for Setup Completion
 
 1. Monitor your email for the "EC2 UserData Script Complete" notification
-2. This email indicates that the EC2 instance has finished its initialization
-3. **Important**: Do not attempt to connect to the EC2 instance until you receive this email
+2. This email will contain:
+   - Confirmation that the EC2 instance has finished initialization
+   - Direct URL to connect to your EC2 instance console
+   - Instance ID and region information
+   - AWS Account ID for reference
+3. **Important**: 
+   - Do not attempt to connect to the EC2 instance until you receive this email
+   - Use the provided console URL in the email for easy access to your instance
+   - Ensure you're logged into the AWS Console before clicking the URL
 4. Setup typically takes 10-15 minutes to complete
+
+Example email content:
+
+```markdown
+EC2 instance i-0123456789abcxxxx has completed user-data script initialization.
+
+Instance Details:
+- Instance ID: i-0123456789abcxxxx
+- Region: us-west-2
+- Account ID: 123456789012
+
+Connect to your instance using:
+https://123456789012.console.aws.amazon.com/ec2/home?region=us-west-2#ConnectToInstance:instanceId=i-0123456789abcxxxx
+
+Note: Make sure you're logged into the AWS Console before using this URL.
+```
 
 ### 4. Monitor Stack Creation (Optional)
 
