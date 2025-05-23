@@ -21,6 +21,7 @@ graph LR
     D -->|Uses| E[Amazon Rekognition]
     D -->|Stores Results| F[DynamoDB]
     G[SNS] -->|Notifications| H[Email]
+```
     
 ## Prerequisites
 

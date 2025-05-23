@@ -146,23 +146,41 @@ Resources:
           wget -q https://github.com/intel-iot-devkit/sample-videos/raw/refs/heads/master/car-detection.mp4
 
           # Create streaming script
+                    # Create streaming script with IMDSv2 support
           cat > /home/ubuntu/stream-video.sh << 'EOF'
           #!/bin/bash
           set -e
           export GST_PLUGIN_PATH=/home/ubuntu/amazon-kinesis-video-streams-producer-sdk-cpp/build
 
-          # Get credentials with error handling
-          ROLE_NAME=$(curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/)
-          CREDENTIALS=$(curl -s http://169.254.169.254/latest/meta-data/iam/security-credentials/$ROLE_NAME)
+          # Get IMDSv2 token
+          TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+          if [ -z "$TOKEN" ]; then
+            echo "Failed to retrieve IMDSv2 token"
+            exit 1
+          fi
+
+          # Get credentials with IMDSv2 token
+          ROLE_NAME=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/iam/security-credentials/)
+          if [ -z "$ROLE_NAME" ]; then
+            echo "Failed to retrieve IAM role name"
+            exit 1
+          fi
+
+          CREDENTIALS=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/iam/security-credentials/$ROLE_NAME)
           export AWS_ACCESS_KEY_ID=$(echo $CREDENTIALS | jq -r '.AccessKeyId')
           export AWS_SECRET_ACCESS_KEY=$(echo $CREDENTIALS | jq -r '.SecretAccessKey')
           export AWS_SESSION_TOKEN=$(echo $CREDENTIALS | jq -r '.Token')
-          export AWS_DEFAULT_REGION=${AWS::Region}
+          
+          # Get region using IMDSv2
+          export AWS_DEFAULT_REGION=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/placement/region)
 
-          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
-            echo "Failed to retrieve credentials"
+          if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ] || [ -z "$AWS_DEFAULT_REGION" ]; then
+            echo "Failed to retrieve credentials or region"
             exit 1
           fi
+
+          echo "Successfully retrieved credentials for role: $ROLE_NAME"
+          echo "Region: $AWS_DEFAULT_REGION"
           
           cd ~/amazon-kinesis-video-streams-producer-sdk-cpp/build
           ./kvs_gstreamer_sample aws-kvs-license-detection-demo ~/videos/car-detection.mp4
@@ -180,8 +198,20 @@ Resources:
           chown -R ubuntu:ubuntu /home/ubuntu/videos
           chmod 755 /home/ubuntu/videos
 
-          # Get instance ID and create connect URL
-          INSTANCE_ID=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+          # Get IMDSv2 token first
+          TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
+          if [ -z "$TOKEN" ]; then
+            echo "Failed to retrieve IMDSv2 token"
+            exit 1
+          fi
+
+          # Get instance ID using IMDSv2
+          INSTANCE_ID=$(curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/instance-id)
+          if [ -z "$INSTANCE_ID" ]; then
+            echo "Failed to retrieve instance ID"
+            exit 1
+          fi
+
           CONNECT_URL="https://${AWS::AccountId}.console.aws.amazon.com/ec2/home?region=${AWS::Region}#ConnectToInstance:instanceId=$INSTANCE_ID"
 
           # Create a more detailed message
@@ -197,6 +227,11 @@ Resources:
           $CONNECT_URL
 
           Note: Make sure you're logged into the AWS Console before using this URL.
+
+          After connecting, you can start streaming video using:
+          cd /home/ubuntu
+          ./stream-video.sh
+
           EOF
           )
 
