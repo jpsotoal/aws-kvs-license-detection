@@ -183,7 +183,8 @@ Resources:
           echo "Region: $AWS_DEFAULT_REGION"
           
           cd ~/amazon-kinesis-video-streams-producer-sdk-cpp/build
-          ./kvs_gstreamer_sample aws-kvs-license-detection-demo ~/videos/car-detection.mp4
+          # ./kvs_gstreamer_sample aws-kvs-license-detection-demo ~/videos/car-detection.mp4
+          while true; do ./kvs_gstreamer_sample kvs-workshop-stream ~/videos/car-detection.mp4 && sleep 10s; done
           EOF
 
           # Set correct ownership and permissions
