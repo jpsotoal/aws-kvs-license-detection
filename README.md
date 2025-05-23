@@ -9,11 +9,13 @@ This project demonstrates an automated license plate detection system using AWS 
 3. **S3 Bucket**: Stores image frames extracted from the video stream
 4. **Lambda Function**: Processes images to detect license plates using Rekognition
 5. **DynamoDB**: Stores detected license plate information
+6. **SNS**: Sends email notification when system is ready to use
 
 ## Prerequisites
 
 - AWS CLI installed and configured with appropriate permissions
 - An AWS account with access to create the required resources
+- A valid email address to receive system notifications
 
 ## Deployment Instructions
 
@@ -23,36 +25,40 @@ This project demonstrates an automated license plate detection system using AWS 
 aws cloudformation create-stack \
   --stack-name kvs-license-detection \
   --template-body file://aws-kvs-license-detection-demo-cfn.yaml \
+  --parameters ParameterKey=EmailAddress,ParameterValue=your.email@example.com \
   --capabilities CAPABILITY_IAM
 ```
 
-### 2. Monitor Stack Creation
+### 2. Confirm SNS Subscription
+
+1. Check your email for a message from AWS Notifications
+2. Click the "Confirm subscription" link in the email
+3. You should see a confirmation message in your browser
+
+### 3. Wait for Setup Completion
+
+1. Monitor your email for the "EC2 UserData Script Complete" notification
+2. This email indicates that the EC2 instance has finished its initialization
+3. **Important**: Do not attempt to connect to the EC2 instance until you receive this email
+4. Setup typically takes 10-15 minutes to complete
+
+### 4. Monitor Stack Creation (Optional)
 
 ```bash
 aws cloudformation describe-stacks \
   --stack-name kvs-license-detection
 ```
 
-### 3. Access EC2 Instance
+### 5. Access EC2 Instance
 
-Once the stack is created successfully, retrieve the SSH key:
+Only proceed with these steps after receiving the completion email:
 
-```bash
-aws ec2 describe-key-pairs \
-  --key-names aws-kvs-license-detection-key \
-  --query 'KeyPairs[0].KeyMaterial' \
-  --output text > aws-kvs-license-detection-key.pem
-
-chmod 400 aws-kvs-license-detection-key.pem
-```
-
-Connect to the EC2 instance:
-
-```bash
-ssh -i aws-kvs-license-detection-key.pem ubuntu@<EC2-PUBLIC-IP>
-```
-
-Replace `<EC2-PUBLIC-IP>` with the public IP address from the CloudFormation outputs.
+1. Open EC2 Console
+2. Look for the running instance named "aws-kvs-demo"
+3. Click on Connect button
+4. Select EC2 Instance Connect
+5. Leave the default settings
+6. Click Connect 
 
 ## Testing the Solution
 
@@ -61,7 +67,8 @@ Replace `<EC2-PUBLIC-IP>` with the public IP address from the CloudFormation out
 On the EC2 instance, use the pre-installed GStreamer with KVS plugin:
 
 ```bash
-TODO
+cd ~/videos
+./stream-video.sh
 ```
 
 ### 2. View Results
@@ -94,7 +101,30 @@ aws cloudformation delete-stack --stack-name kvs-license-detection
 
 ## Troubleshooting
 
+### Setup Phase
+- **Missing Confirmation Email**: Check your spam folder for the AWS SNS confirmation email
+- **No Completion Email**: The user-data script might have failed. Check EC2 instance logs in CloudWatch
+- **Long Setup Time**: The initialization process includes software installation and compilation, which can take 10-15 minutes
+
+### Operation Phase
 - **EC2 Connection Issues**: Ensure your security group allows SSH access from your IP
 - **KVS Streaming Issues**: Check EC2 instance logs and ensure IAM permissions are correct
 - **Lambda Errors**: Check CloudWatch Logs for the Lambda function
 - **Missing License Plate Detections**: Ensure images contain clear, visible license plates for Rekognition to detect
+
+### CloudWatch Logs Access
+
+To check EC2 instance logs:
+```bash
+aws logs get-log-events \
+  --log-group-name /var/log/cloud-init-output.log \
+  --log-stream-name $(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+```
+
+## Support
+
+If you encounter issues:
+1. Check CloudWatch Logs for detailed error messages
+2. Verify all SNS email confirmations were completed
+3. Ensure the user-data script completed successfully (check for completion email)
+4. Review IAM roles and permissions if experiencing access issues
