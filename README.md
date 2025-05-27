@@ -92,12 +92,25 @@ Only proceed with these steps after receiving the completion email:
 
 ### 1. Stream Video to KVS
 
-On the EC2 instance, use the pre-installed GStreamer with KVS plugin:
+The EC2 instance, will run automatically script below:
 
 ```bash
-cd ~/videos
 ./stream-video.sh
+
+You can check streaming video in: AWS Console > Kinises Video Stream > Video streams > aws-kvs-license-detection-demo > Media playback.
 ```
+**How to**: 
+- Check status: `sudo systemctl status kvs-stream.service`
+
+- Stop streaming: `sudo systemctl stop kvs-stream.service`
+
+- Start streaming: `sudo systemctl start kvs-stream.service`
+
+- Restart streaming: `sudo systemctl restart kvs-stream.service`
+
+- Disable auto-start: `sudo systemctl disable kvs-stream.service`
+
+- Enable auto-start: `sudo systemctl enable kvs-stream.service`
 
 ### 2. View Results
 
