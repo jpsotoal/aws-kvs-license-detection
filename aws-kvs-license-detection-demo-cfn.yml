@@ -143,7 +143,7 @@ Resources:
           VIDEO_DIR="/home/ubuntu/videos"
           mkdir -p $VIDEO_DIR
           cd $VIDEO_DIR
-          wget -q https://github.com/intel-iot-devkit/sample-videos/raw/refs/heads/master/license-detection.mp4
+          wget -q https://github.com/jpsotoal/aws-kvs-license-detection/raw/main/license-detection.mp4
 
           # Create streaming script
                     # Create streaming script with IMDSv2 support
@@ -199,6 +199,29 @@ Resources:
           chown -R ubuntu:ubuntu /home/ubuntu/videos
           chmod 755 /home/ubuntu/videos
 
+          # Create systemd service to run stream-video.sh automatically
+          cat > /etc/systemd/system/kvs-stream.service << EOF
+          [Unit]
+          Description=KVS Video Streaming Service
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=ubuntu
+          WorkingDirectory=/home/ubuntu
+          ExecStart=/home/ubuntu/stream-video.sh
+          Restart=always
+          RestartSec=10
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+
+          # Enable and start the service
+          systemctl daemon-reload
+          systemctl enable kvs-stream.service
+          systemctl start kvs-stream.service
+
           # Get IMDSv2 token first
           TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
           if [ -z "$TOKEN" ]; then
@@ -229,9 +252,15 @@ Resources:
 
           Note: Make sure you're logged into the AWS Console before using this URL.
 
-          After connecting, you can start streaming video using:
-          cd /home/ubuntu
-          ./stream-video.sh
+          The video streaming service has been automatically started and will run continuously.
+          
+          You can manage the streaming service using these commands:
+          - Check status: sudo systemctl status kvs-stream.service
+          - Stop streaming: sudo systemctl stop kvs-stream.service
+          - Start streaming: sudo systemctl start kvs-stream.service
+          - Restart streaming: sudo systemctl restart kvs-stream.service
+          - Disable auto-start: sudo systemctl disable kvs-stream.service
+          - Enable auto-start: sudo systemctl enable kvs-stream.service
 
           EOF
           )
