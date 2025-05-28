@@ -52,12 +52,12 @@ class RekognitionImage:
             logger.error(f"Couldn't detect text in {self.image_name}. {e}")
             raise
 
-def process_license_plate(text_detections):
+def process_license_plates(text_detections):
     """
     Process text detections to find and clean license plate text
-    Returns a tuple of (license_plate, confidence)
+    Returns a list of tuples (license_plate, confidence)
     """
-    # First, look for text detections with high confidence
+    # Look for text detections with high confidence
     potential_plates = []
     
     for detection in text_detections:
@@ -72,16 +72,19 @@ def process_license_plate(text_detections):
             # Check if the text matches common license plate patterns
             # Adjust these patterns based on your specific license plate formats
             if re.match(r'^[A-Z0-9]{5,8}$', cleaned_text) or re.match(r'^[A-Z]{1,3}[-\s]?[0-9]{1,4}$', text):
-                potential_plates.append((text, cleaned_text, confidence))
+                potential_plates.append((cleaned_text, confidence))
     
-    # Sort by confidence and return the highest confidence match
+    # Sort by confidence (highest first)
     if potential_plates:
-        potential_plates.sort(key=lambda x: x[2], reverse=True)
-        original_text, cleaned_text, confidence = potential_plates[0]
-        logger.info(f"Detected license plate: {original_text} (cleaned: {cleaned_text}) with confidence {confidence:.2f}")
-        return cleaned_text, confidence
+        potential_plates.sort(key=lambda x: x[1], reverse=True)
+        
+        # Log all detected license plates
+        for plate, conf in potential_plates:
+            logger.info(f"Detected license plate: {plate} with confidence {conf:.2f}")
+        
+        return potential_plates
     
-    return None, 0
+    return []
 
 def check_duplicate_license_plate(license_plate, time_window_minutes=None):
     """Check if this license plate was recently detected within the time window"""
@@ -163,36 +166,52 @@ def lambda_handler(event, context):
         logger.info(f"[RequestID: {request_id}] Calling Rekognition to detect text")
         text_detections = rekognition_image.detect_text()
         
-        # Process the text to find license plates
-        license_plate, confidence = process_license_plate(text_detections)
+        # Process the text to find license plates - now returns a list of all potential plates
+        license_plates = process_license_plates(text_detections)
         
-        if license_plate:
-            logger.info(f"[RequestID: {request_id}] License plate detected: {license_plate} with confidence {confidence:.2f}")
+        if license_plates:
+            logger.info(f"[RequestID: {request_id}] {len(license_plates)} license plates detected")
             
-            # Save the detection to DynamoDB (if not a duplicate)
-            saved = save_to_dynamodb(license_plate, confidence, image_key, bucket_name)
+            results = []
+            saved_count = 0
+            duplicate_count = 0
             
-            result = {
-                'license_plate': license_plate,
-                'confidence': float(confidence),
-                'image_key': image_key,
-                'saved_to_db': saved
-            }
+            # Process each detected license plate
+            for license_plate, confidence in license_plates:
+                # Save the detection to DynamoDB (if not a duplicate)
+                saved = save_to_dynamodb(license_plate, confidence, image_key, bucket_name)
+                
+                plate_result = {
+                    'license_plate': license_plate,
+                    'confidence': float(confidence),
+                    'saved_to_db': saved
+                }
+                
+                if saved:
+                    saved_count += 1
+                else:
+                    plate_result['duplicate'] = True
+                    duplicate_count += 1
+                    logger.info(f"[RequestID: {request_id}] Duplicate license plate {license_plate} - not saved to DynamoDB")
+                
+                results.append(plate_result)
             
-            if not saved:
-                result['duplicate'] = True
-                logger.info(f"[RequestID: {request_id}] Duplicate license plate - not saved to DynamoDB")
-            
-            return {
-                'statusCode': 200,
-                'body': json.dumps(result, default=str)
-            }
-        else:
-            logger.info(f"[RequestID: {request_id}] No license plate detected in the image")
             return {
                 'statusCode': 200,
                 'body': json.dumps({
-                    'message': 'No license plate detected',
+                    'image_key': image_key,
+                    'total_plates_detected': len(license_plates),
+                    'plates_saved': saved_count,
+                    'plates_duplicate': duplicate_count,
+                    'results': results
+                }, default=str)
+            }
+        else:
+            logger.info(f"[RequestID: {request_id}] No license plates detected in the image")
+            return {
+                'statusCode': 200,
+                'body': json.dumps({
+                    'message': 'No license plates detected',
                     'image_key': image_key
                 }, default=str)
             }
