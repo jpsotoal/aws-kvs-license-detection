@@ -173,6 +173,14 @@ The following resources in this solution may incur AWS charges:
 - Amazon S3 storage
 - Amazon QuickSight subscription
 
+## Cleanup
+
+To delete all resources created by this stack:
+
+```bash
+aws cloudformation delete-stack --stack-name kvs-license-reporting
+```
+
 ## Related Resources
 
 - [Amazon Athena Documentation](https://docs.aws.amazon.com/athena/)
