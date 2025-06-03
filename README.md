@@ -12,7 +12,7 @@ This project demonstrates an automated license plate detection system using AWS 
 6. **SNS**: Sends email notification when system is ready to use
 
 ## Architecture Diagram
-![aws-kvs-license-detection](https://github.com/user-attachments/assets/c6ba3312-c096-4a83-a0d7-94bb2a6d4271)
+![license-detection-architecture](https://github.com/user-attachments/assets/78bbd2c6-fe78-40fe-a071-412c4e98b348)
     
 ## Prerequisites
 
