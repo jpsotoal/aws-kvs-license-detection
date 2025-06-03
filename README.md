@@ -132,6 +132,9 @@ You can check streaming video in: AWS Console > Kinises Video Stream > Video str
 4. Lambda uses Rekognition to detect license plates in the images
 5. If a license plate is detected with high confidence, the information is stored in DynamoDB
 
+## Reporting Deployment
+Please refer to [KVS-Reporting-Deployment](https://github.com/jpsotoal/aws-kvs-license-detection/blob/main/reporting/README.md)
+
 ## Cleanup
 
 To delete all resources created by this stack:
